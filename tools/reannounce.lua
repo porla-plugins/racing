@@ -8,7 +8,7 @@ return {
     begin = function(torrent, interval, max_tries)
         local peers = torrents.peers.list(torrent)
 
-        if #(peers) > 100 then
+        if #(peers) > 0 then
             log.info(string.format("Torrent %s already has %d peer(s) - not reannouncing", torrent.name, #(peers)))
             return
         end
@@ -23,7 +23,7 @@ return {
 
                 local peers = torrents.peers.list(torrent)
 
-                if #(peers) > 100 then
+                if #(peers) > 0 then
                     log.info(string.format("Torrent %s has %d peers - racing done", torrent.name, #(peers)))
 
                     timer:cancel()
