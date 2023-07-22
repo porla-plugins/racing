@@ -55,6 +55,8 @@ return {
                 for _, tracker in ipairs(trackers) do
                     for _, endpoint in ipairs(tracker.endpoints) do
                         for _, aih in ipairs(endpoint.info_hashes) do
+                            log.info(string.format("Matching tracker message '%s' against known failures (tracker %s)", aih.message, tracker.url))
+
                             for _, message in ipairs(match_failures) do
                                 local i, j = string.find(aih.message, message)
 
