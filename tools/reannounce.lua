@@ -13,10 +13,7 @@ return {
             return
         end
 
-        local current_tries = 0
-        local timer         = nil
-
-        timer = timers.new({
+        local timer = timers.new({
             interval = interval,
             callback = function()
                 log.debug(string.format("Checking if %s needs reannouncing", torrent.name))
@@ -26,17 +23,17 @@ return {
                 if #(peers) > 0 then
                     log.info(string.format("Torrent %s has %d peers - racing done", torrent.name, #(peers)))
 
-                    timer:cancel()
-                    timer = nil
+                    active_timers[torrent.name].timer:cancel()
+                    active_timers[torrent.name] = nil
 
                     return
                 end
 
-                if current_tries >= max_tries then
+                if active_timers[torrent.name].tries >= max_tries then
                     log.info(string.format("Torrent %s reached max announce tries", torrent.name))
 
-                    timer:cancel()
-                    timer = nil
+                    active_timers[torrent.name].timer:cancel()
+                    active_timers[torrent.name] = nil
 
                     return
                 end
@@ -73,34 +70,37 @@ return {
                 end
 
                 if found_matching_failure then
-                    log.info(string.format("Sending reannounce attempt %d of %d for %s", current_tries + 1, max_tries, torrent.name))
+                    log.info(string.format("Sending reannounce attempt %d of %d for %s", active_timers[torrent.name].tries + 1, max_tries, torrent.name))
 
                     torrents.reannounce(torrent, {
                         seconds       = 0,
                         tracker_index = -1
                     })
 
-                    current_tries = current_tries + 1
+                    active_timers[torrent.name].tries = active_timers[torrent.name].tries + 1
 
                     return
                 end
 
                 log.warning(string.format("No tracker for %s matches any known failure - skipping reannounce", torrent.name))
 
-                timer:cancel()
-                timer = nil
+                active_timers[torrent.name].timer:cancel()
+                active_timers[torrent.name] = nil
             end
         })
 
-        table.insert(active_timers, timer)
+        active_timers[torrent.name] = {
+            timer = timer,
+            tries = 0
+        }
     end,
 
     cancel = function()
-        for _, tmr in ipairs(active_timers) do
-            if tmr ~= nil then
-                tmr:cancel()
-                tmr = nil
-            end
+        for name, _ in pairs(active_timers) do
+            log.info(string.format("Cancelling timer for %s (currently on attempt %d)", name, active_timers[name].tries))
+
+            active_timers[name].timer:cancel()
+            active_timers[name] = nil
         end
     end
 }
