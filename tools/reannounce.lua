@@ -69,7 +69,7 @@ return {
                     end
                 end
 
-                if found_matching_failure then
+                if found_matching_failure or #(peers) == 0 then
                     log.info(string.format("Sending reannounce attempt %d of %d for %s", active_timers[torrent.name].tries + 1, max_tries, torrent.name))
 
                     torrents.reannounce(torrent, {
