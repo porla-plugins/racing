@@ -19,25 +19,27 @@ function porla.init()
             log.info("Setting up racing reannounce event")
 
             added_signal = events.on("torrent_added", function(torrent)
-                log.debug(string.format("Checking %s against racing filter", torrent.name))
+                local torrentstatus = torrent:status()
+                local name          = torrentstatus.name
+                log.debug(string.format("Checking %s against racing filter", name))
 
                 if config.reannounce.filter(torrent) then
-                    log.info(string.format("Torrent %s matched racing filter - reannouncing", torrent.name))
+                    log.info(string.format("Torrent %s matched racing filter - reannouncing", name))
 
                     local interval  = config.reannounce.interval
                     local max_tries = config.reannounce.max_tries
 
                     if interval == nil then
-                        interval = 1500
+                        interval = 7000
                     end
 
                     if max_tries == nil then
-                        max_tries = 7
+                        max_tries = 18
                     end
 
                     reannounce.begin(torrent, interval, max_tries)
                 else
-                    log.debug(string.format("Torrent %s did not match racing filter", torrent.name))
+                    log.debug(string.format("Torrent %s did not match racing filter", name))
                 end
             end)
         end
