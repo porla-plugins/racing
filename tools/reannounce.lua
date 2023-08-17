@@ -6,90 +6,61 @@ local active_timers = {}
 
 return {
     begin = function(torrent, interval, max_tries)
-        local peers = torrents.peers.list(torrent)
+        local torrentstatus = torrent:status()
+        local peers         = torrentstatus.num_peers
+        local name          = torrentstatus.name
 
-        if #(peers) > 0 then
-            log.info(string.format("Torrent %s already has %d peer(s) - not reannouncing", torrent.name, #(peers)))
+        if peers > 0 then
+            log.info(string.format("Torrent %s already has %d peer(s) - not reannouncing", name, peers))
             return
         end
 
         local timer = timers.new({
             interval = interval,
             callback = function()
-                log.debug(string.format("Checking if %s needs reannouncing", torrent.name))
+                log.debug(string.format("Checking if %s needs reannouncing", name))
 
-                local peers = torrents.peers.list(torrent)
+                local torrentstatus = torrent:status()
+                local peers         = torrentstatus.num_peers
+                local name          = torrentstatus.name
 
-                if #(peers) > 0 then
-                    log.info(string.format("Torrent %s has %d peers - racing done", torrent.name, #(peers)))
+                if peers > 0 then
+                    log.info(string.format("Torrent %s has %d peers - racing done", name, peers))
 
-                    active_timers[torrent.name].timer:cancel()
-                    active_timers[torrent.name] = nil
-
-                    return
-                end
-
-                if active_timers[torrent.name].tries >= max_tries then
-                    log.info(string.format("Torrent %s reached max announce tries", torrent.name))
-
-                    active_timers[torrent.name].timer:cancel()
-                    active_timers[torrent.name] = nil
+                    active_timers[name].timer:cancel()
+                    active_timers[name] = nil
 
                     return
                 end
 
-                local match_failures = {
-                    "not exist",
-                    "not found",
-                    "not registered",
-                    "unregistered",
-                    "not authorized"
-                }
+                if active_timers[name].tries >= max_tries then
+                    log.info(string.format("Torrent %s reached max announce tries", name))
 
-                local trackers = torrents.trackers.list(torrent)
-                local found_matching_failure = false
+                    active_timers[name].timer:cancel()
+                    active_timers[name] = nil
 
-                for _, tracker in ipairs(trackers) do
-                    for _, endpoint in ipairs(tracker.endpoints) do
-                        for _, aih in ipairs(endpoint.info_hashes) do
-                            log.info(string.format("Matching tracker message '%s' against known failures (tracker %s)", aih.message, tracker.url))
-
-                            for _, message in ipairs(match_failures) do
-                                local i, j = string.find(aih.message, message)
-
-                                if i == nil or j == nil then
-                                    goto next_message
-                                end
-
-                                found_matching_failure = true
-
-                                ::next_message::
-                            end
-                        end
-                    end
+                    return
                 end
 
-                if found_matching_failure or #(peers) == 0 then
-                    log.info(string.format("Sending reannounce attempt %d of %d for %s", active_timers[torrent.name].tries + 1, max_tries, torrent.name))
+                if peers == 0 then
+                    log.info(string.format("Sending reannounce attempt %d of %d for %s", active_timers[name].tries + 1, max_tries, name))
 
-                    torrents.reannounce(torrent, {
+                    torrent:force_reannounce({
                         seconds       = 0,
                         tracker_index = -1
                     })
 
-                    active_timers[torrent.name].tries = active_timers[torrent.name].tries + 1
+                    active_timers[name].tries = active_timers[name].tries + 1
 
                     return
                 end
 
-                log.warning(string.format("No tracker for %s matches any known failure - skipping reannounce", torrent.name))
-
-                active_timers[torrent.name].timer:cancel()
-                active_timers[torrent.name] = nil
+                active_timers[name].timer:cancel()
+                active_timers[name] = nil
             end
         })
 
-        active_timers[torrent.name] = {
+        active_timers[name] = {
             timer = timer,
             tries = 0
         }
