@@ -2,6 +2,6 @@ main = "plugin.lua"
 
 [plugin]
 name = "racing"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Viktor Elofsson <viktor@viktorelofsson.se>"]
 homepage = "https://github.com/porla-plugins/racing"
