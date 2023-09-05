@@ -26,8 +26,11 @@ function porla.init()
                 if config.reannounce.filter(torrent) then
                     log.info(string.format("Torrent %s matched racing filter - reannouncing", name))
 
-                    local interval  = config.reannounce.interval
-                    local max_tries = config.reannounce.max_tries
+                    local interval    = config.reannounce.interval
+                    local max_tries   = config.reannounce.max_tries
+                    local max_age     = config.reannounce.max_age
+                    local add_tags    = config.reannounce.add_tags
+                    local remove_tags = config.reannounce.remove_tags
 
                     if interval == nil then
                         interval = 7000
@@ -37,7 +40,19 @@ function porla.init()
                         max_tries = 18
                     end
 
-                    reannounce.begin(torrent, interval, max_tries)
+                    if max_age == nil then
+                        max_age = 3600
+                    end
+
+                    if add_tags == nil then
+                        add_tags = {"racing-failed"}
+                    end
+
+                    if remove_tags == nil then
+                        remove_tags = {}
+                    end
+
+                    reannounce.begin(torrent, interval, max_tries, max_age, add_tags, remove_tags)
                 else
                     log.debug(string.format("Torrent %s did not match racing filter", name))
                 end
