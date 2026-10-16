@@ -3,26 +3,21 @@
 This plugin contains tools and utils for making it easier to get ahead in early
 swarms for newly announced torrents.
 
-This plugin requires Porla 0.35.1-beta.1+170 or newer. That is anything with PR #258 merged.
+This plugin requires Porla 0.51.0 or newer.
 
 ## Configuration
 
 ```lua
 return {
-    -- the reannounce runs whenever a torrent is added. it maches the torrent
-    -- against the filter function. if the filter function returns true, it will
+    -- the reannounce runs whenever a torrent is added. It maches the torrent
+    -- against the PQL Query. If the PQL filter query is matched, it will
     -- start a reannounce chain, doing <max_tries> reannounces with <interval>
     -- milliseconds of sleep between.
     reannounce = {
-        filter = function(torrent)
-            local userdata = torrent:userdata()
-            --the tag "racing" is set for this torrent.
-            return userdata.tags.racing
-        end,
-
+        filter = "$userdata.tags:\"racing\"",
         interval  = 7000,
-        max_tries = 18,
-        max_age = 3600,
+        max_tries = 85,
+        max_age = 600,
         add_tags = {"racing-failed"},
         remove_tags = {"racing"}
     }
@@ -30,19 +25,19 @@ return {
 ```
 
 ### `filter`
-Boolean. Function that filters which torrents the plugin will reannounce.
-Defaults to nil.
+[PQL Query](https://porla.org/concepts/pql). PQL query that filters which torrents the plugin will reannounce.
+Defaults to 'racing'.
 
 ### `interval`
 Integer. Time between reannounce attempts in milliseconds. Defaults to 7000.
 
 ### `max_tries`
 Integer. Maximum number of times the plugin will attempt a reannounce.
-Defaults to 18.
+Defaults to 85.
 
 ### `max_age`
 Integer. Maximum time since the torrent was added to attempt to reannounce.
-Defaults to 3600.
+Defaults to 600.
 This is useful if you have more racing torrents queued than your active
 downloads setting.
 
